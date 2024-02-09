@@ -6,7 +6,7 @@ import os
 
 load_dotenv()
 
-LOCAL_IP_ADDRESS = os.getenv("LOCAL_IP_ADDRESS")
+LOCAL_IP_ADDRESS = os.getenv("LOCAL_IP_ADDRESS_A")
 if not LOCAL_IP_ADDRESS:
     print("You don't have a valid local ip address in your .env")
     exit()
@@ -33,7 +33,6 @@ if __name__ == "__main__":
         burstSlots = 0
         observedSlots = 0
         for packet in capture:
-            # print(packet)
             if not "ip" in packet: continue
             if LOCAL_IP_ADDRESS in packet.ip.src: typeOfPacket = UPLINK
             else:
