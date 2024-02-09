@@ -1,0 +1,4 @@
+*.pcap
+*.env
+*.pdf
+*.DS_Store
