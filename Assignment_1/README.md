@@ -11,7 +11,7 @@
 
 **Question1 :** The graphs that were obtained for the `uplink` and `downlink` traffic are shown below
 
-![1707457769496](image/README/1707457769496.png)
+![1707664307708](image/README/1707664307708.png)
 
 **Question 2:** The burst fraction for different resolutions are mentioned below:
 
@@ -43,4 +43,28 @@
 
 **Question 3:** The cumulative plots are shown below
 
-![1707467318784](image/README/1707467318784.png)
+![1707664322168](image/README/1707664322168.png)
+
+## Activity 3
+
+Run the `dns.py` file and give the hex byte stream as an input. The question and the answer (if it exists) will be logged to the terminal. If it is an invalid packet, "Invalid data" will be logged.
+
+These are the results for the given packets in the assignment:
+
+- Packet 1
+  - Question: timesofindia.indiatimes.com
+- Packet 2
+  - Question: cse.iitm.ac.in
+  - Answer: 10.6.8.2
+- Packet 3 - Invalid data
+- Packet 4 - Invalid data
+- Packet 5
+  - Question: fonts.googleapis.com
+  - Answer: 142.250.182.74
+
+The checks for the "Invalid data" are:
+
+1. Bit stream not in complete octets
+2. Valid `ascii` checking for domain name
+3. Reserved flag (`Z` as mentioned in the `RFC`) in the headerr
+4. Invalid message compression with opCodes `01` and `10`
