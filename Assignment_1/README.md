@@ -52,13 +52,13 @@ We have used a `.py` file instead of a `.ipynb` file as sugggested in the assign
 
 **Question 1, 2:** `TTFB`, `page_load_time` and number of `GET` requests
 
-| File   | TTFB (ms) | PLT (ms) | #GET |
-| ------ | --------- | -------- | ---- |
-| Deccan | 376       | 594      | 29   |
-| Jagran | 101       | 665      | 42   |
-| Usach  | 1760      | NaN      | 139  |
-| SINU   | 2086      | 11709    | 24   |
-| MIT    | 184       | 655      | 58   |
+| Website | TTFB (ms) | Page Load Time (ms) | Total GET Requests |
+| ------- | --------- | ------------------- | ------------------ |
+| deccan  | 228.380   | 2490.194            | 30                 |
+| jagran  | 225.280   | 835.276             | 51                 |
+| usach   | 1747.536  | 31872.584           | 141                |
+| sinu    | 1836.706  | 23445.594           | 58                 |
+| mit     | 172.882   | 616.618             | 24                 |
 
 **Question 3:** Different `MIME` types
 
@@ -86,25 +86,23 @@ We have used a `.py` file instead of a `.ipynb` file as sugggested in the assign
 
 **Question 4:** Fraction of `GET` requests
 
-
-| HAR File | Images | Javascript | HTML | CSS  |
-| -------- | ------ | ---------- | ---- | ---- |
-| jagran   | 0.12   | 0.45       | 0.05 | 0.14 |
-| deccan   | 0.21   | 0.34       | 0.03 | 0.07 |
-| mit      | 0.21   | 0.29       | 0.25 | 0.12 |
-| usach    | 0.35   | 0.29       | 0.03 | 0.31 |
-| sinu     | 0.07   | 0.29       | 0.02 | 0.45 |
+| Website | Images | Javascript | HTML | CSS  |
+| ------- | ------ | ---------- | ---- | ---- |
+| jagran  | 0.10   | 0.47       | 0.04 | 0.12 |
+| deccan  | 0.20   | 0.33       | 0.03 | 0.07 |
+| mit     | 0.21   | 0.29       | 0.25 | 0.12 |
+| usach   | 0.35   | 0.28       | 0.03 | 0.30 |
+| sinu    | 0.07   | 0.29       | 0.02 | 0.45 |
 
 **Question 5:** Asset statistics
 
-
-| HAR File | Total Asset Size (Mb) | Total (Mb) | Fraction | Mean (Mb) | Median (Mb) |
-| -------- | --------------------- | ---------- | -------- | --------- | ----------- |
-| deccan   | 3893.463              | 131.751    | 0.033    | 26.311    | 16.646      |
-| jagran   | 1703.137              | 302.181    | 0.176    | 60.464    | 43.778      |
-| mit      | 1112.135              | 381.243    | 0.343    | 763.555   | 43.324      |
-| usach    | 7194.078              | 5985.204   | 0.831    | 124.646   | 17.013      |
-| sinu     | 4530.086              | 1190.538   | 0.263    | 298.766   | 360.253     |
+| Website | Total Asset Size (Mb) | Total (Mb) | Fraction of | Mean (Mb) | Median (Mb) |
+| ------- | --------------------- | ---------- | ----------- | --------- | ----------- |
+| deccan  | 3902.082              | 115.568    | 0.030       | 19.214    | 23.281      |
+| jagran  | 2188.322              | 229.194    | 0.105       | 45.954    | 27.812      |
+| mit     | 1112.135              | 381.243    | 0.343       | 781.602   | 43.377      |
+| usach   | 14860.799             | 13638.676  | 0.918       | 273.714   | 10.252      |
+| sinu    | 4530.086              | 1190.538   | 0.263       | 305.733   | 368.722     |
 
 ## Activity 3
 
