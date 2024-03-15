@@ -1,43 +1,58 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include "./ChatServer.h"
 
-char clientMessage[2000];
-char buffer[1024];
+static user_t users[MAX_USERS];
 static int userCount = 0;
+volatile sig_atomic_t terminate = 0;
 
 void error(const char *msg) {
 	perror(msg);
 	exit(1);
 }
 
-void* socketThread(void *args) {
+void* userThread(void *args) {
 	int newSocket = *((int *) args);	
-
+	char buffer[MAX_MESSAGE_LENGTH];
+	user_t user = users[userCount - 1];
+	// user.sockfd = newSocket;
+	user.id = newSocket;
  	do {
- 		bzero(buffer, 255);
- 		if (read(newSocket, buffer, 255) < 0) error("Error in reading");
+ 		bzero(buffer, MAX_MESSAGE_LENGTH);
+ 		if (read(newSocket, buffer, MAX_MESSAGE_LENGTH) < 0) error("Error in reading");
  
  		printf("Client: %s\n", buffer);
-		send(newSocket, buffer, 13, 0);
+		for (int i = 0; i < MAX_USERS; i++) {
+			if (users[i].id == user.id) continue;
+			printf("Reaching %d %d %d\n", i, users[i].id, user.id);
+			// send(users[i].sockfd, buffer, MAX_MESSAGE_LENGTH, 0);
+		}
  	} while (strncmp("Bye", buffer, 3));
  
-	printf("Exit socketThread \n");
+	printf("Exit userThread \n");
 	close(newSocket);
 	pthread_exit(NULL);
 	return NULL;
 }
 
+void sigint_handler(int sig) {
+	if (sig == 2) terminate = 1;
+    exit(EXIT_SUCCESS);
+}
+
 int main(int argc, char *argv[]) {
 	if (argc < 2) error("Not enough input arguments\n");
-	
+	if (signal(SIGINT, sigint_handler) == SIG_ERR) error("signal");
+
 	int sockfd, newSockfd, portno;
-	char buffer[255];
+	char buffer[MAX_MESSAGE_LENGTH];
 
 	struct sockaddr_in servAddr;
 	struct sockaddr_storage cliAddr;
@@ -57,17 +72,16 @@ int main(int argc, char *argv[]) {
 	if (listen(sockfd, 5) == 0) printf("Listening to PORT %d\n", portno);
 	else error("[Error in listening]");
 	
-	pthread_t clientIDs[5];
-
-	while (1) {
+	while (!terminate) {
 		cliLen = sizeof(cliAddr);
 		newSockfd = accept(sockfd, (struct sockaddr*) &cliAddr, &cliLen);
-		printf("Reaching\n");
-		if (pthread_create(&clientIDs[userCount++], NULL, socketThread, &newSockfd) != 0) error("[Thread creation]\n");
+		users[userCount].sockfd = newSockfd;
+		users[userCount].id = newSockfd;
+		if (pthread_create(&users[userCount++].thread, NULL, userThread, &newSockfd) != 0) error("[Thread creation]\n");
 		if (userCount >= 5) {
 			userCount = 0;
 			while (userCount < 5) {
-				pthread_join(clientIDs[userCount++], NULL);
+				pthread_join(users[userCount++].thread, NULL);
 			}
 			userCount = 0;
 		}
