@@ -9,7 +9,6 @@
 
 char clientMessage[2000];
 char buffer[1024];
-pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 void error(const char *msg) {
 	perror(msg);
@@ -18,15 +17,7 @@ void error(const char *msg) {
 
 void* socketThread(void *args) {
 	int newSocket = *((int *) args);	
-//	recv(newSocket, clientMessage, 2000, 0);	
 
-//	pthread_mutex_lock(&lock);
-	char *message = malloc(sizeof(clientMessage) + 20);
-	strcpy(message,"Hello Client : ");
-	strcat(message, clientMessage);
-	strcat(message, "\n");
-	strcpy(buffer, message);
- 
  	do {
  		bzero(buffer, 255);
  		if (read(newSocket, buffer, 255) < 0) {
@@ -34,18 +25,9 @@ void* socketThread(void *args) {
  		}
  
  		printf("Client: %s\n", buffer);
- 		bzero(buffer, 255);
- 		fgets(buffer, 255, stdin);
- 
- 		if (write(newSocket, buffer, strlen(buffer)) < 0) {
- 			error("Error in writing");
- 		}
+		send(newSocket, buffer, 13, 0);
  	} while (strncmp("Bye", buffer, 3));
  
-	free(message);
-//	pthread_mutex_unlock(&lock);
-	sleep(1);
-	send(newSocket, buffer, 13, 0);
 	printf("Exit socketThread \n");
 	close(newSocket);
 	pthread_exit(NULL);
