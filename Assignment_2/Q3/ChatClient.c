@@ -1,6 +1,3 @@
-/*
-argv -> filename server_ipaddress portno
-*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,9 +13,7 @@ void error(const char *msg) {
 }
 
 int main(int argc, char *argv[]) {
-  if (argc < 3) {
-    error("Not enough input arguments\n");
-  }
+  if (argc < 3) error("Not enough input arguments\n");
 
 	int sockfd, newsockfd, portno;
 	struct sockaddr_in serv_addr;

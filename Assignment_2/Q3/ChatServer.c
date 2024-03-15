@@ -30,9 +30,9 @@ void* userThread(void *args) {
  
  		printf("Client: %s\n", buffer);
 		for (int i = 0; i < MAX_USERS; i++) {
-			if (users[i].id == user.id) continue;
 			printf("Reaching %d %d %d\n", i, users[i].id, user.id);
-			// send(users[i].sockfd, buffer, MAX_MESSAGE_LENGTH, 0);
+			if (users[i].id == user.id) continue;
+			send(users[i].sockfd, buffer, MAX_MESSAGE_LENGTH, 0);
 		}
  	} while (strncmp("Bye", buffer, 3));
  
