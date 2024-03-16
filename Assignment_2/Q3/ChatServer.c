@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
@@ -19,32 +20,40 @@ void error(const char *msg) {
 }
 
 void* userThread(void *args) {
-	int newSocket = *((int *) args);	
+	int newSocket = *((int *) args);
 	char buffer[MAX_MESSAGE_LENGTH];
 	char tempBuffer[MAX_MESSAGE_LENGTH];
-	user_t user = users[userCount - 1];
-	user.id = newSocket;
+	user_t *user = &users[userCount - 1];
+	user->id = newSocket;
 	char usersString[MAX_USERS * MAX_MESSAGE_LENGTH];
+	strcpy(usersString, "Online users: \n"); 
+	bool firstUser = true;
 	for (int i = 0; i < MAX_USERS; i++) {
+		if (!users[i].id || users[i].id == user->id) continue;
+		firstUser = false;
 		strcat(usersString, users[i].name);
+		strcat(usersString, "\n");
 	}
-	printf("userString: %s\n", usersString);
-	// send(user.sockfd, usersString, strlen(usersString), 0);
-	send(user.sockfd, "Connection successful", 21, 0);
- 	if (read(newSocket, user.name, MAX_MESSAGE_LENGTH) < 0) error("Error in reading");
+	if (firstUser) strcpy(usersString, "No online users\n");
+	strcat(usersString, "Enter your username: ");	
+	send(user->sockfd, usersString, strlen(usersString), 0);
+ 	if (read(newSocket, user->name, MAX_MESSAGE_LENGTH) < 0) error("Error in reading");
+ 	bzero(tempBuffer, MAX_MESSAGE_LENGTH);
+	strcpy(tempBuffer, user->name);
+	strcat(tempBuffer, " joined the chat\n");
 	for (int i = 0; i < MAX_USERS; i++) {
-		if (users[i].id == user.id) continue;
-		send(users[i].sockfd, user.name, MAX_MESSAGE_LENGTH, 0);
+		if (users[i].id == user->id) continue;
+		send(users[i].sockfd, tempBuffer, MAX_MESSAGE_LENGTH, 0);
 	}
-	printf("Reaching here\n");
+ 	bzero(tempBuffer, MAX_MESSAGE_LENGTH);
  	do {
  		bzero(buffer, MAX_MESSAGE_LENGTH);
-		strcpy(buffer, user.name); 
+		strcpy(buffer, user->name); 
 		strcat(buffer, ": "); 
  		if (read(newSocket, tempBuffer, MAX_MESSAGE_LENGTH) < 0) error("Error in reading");
 		strcat(buffer, tempBuffer);
 		for (int i = 0; i < MAX_USERS; i++) {
-			if (users[i].id == user.id) continue;
+			if (users[i].id == user->id) continue;
 			send(users[i].sockfd, buffer, MAX_MESSAGE_LENGTH, 0);
 		}
  	} while (strncmp("Bye", buffer, 3));

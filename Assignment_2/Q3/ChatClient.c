@@ -107,7 +107,6 @@ void set_user_name(int sock)
 
 pthread_t setup_incoming_message_listener(int sock)
 {
-    printf("Incoming thread created\n");
     pthread_t message_listener_id;
     if (pthread_create(&message_listener_id, NULL, handle_incoming_message, &sock) != 0)
     {
@@ -120,7 +119,6 @@ pthread_t setup_incoming_message_listener(int sock)
 
 pthread_t setup_outgoing_message_listener(int sock)
 {
-    printf("Outgoing thread created\n");
     pthread_t message_listener_id;
     if (pthread_create(&message_listener_id, NULL, handle_outgoing_message, &sock) != 0)
     {
