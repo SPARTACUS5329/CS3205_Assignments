@@ -22,15 +22,27 @@ void* userThread(void *args) {
 	int newSocket = *((int *) args);	
 	char buffer[MAX_MESSAGE_LENGTH];
 	user_t user = users[userCount - 1];
-	// user.sockfd = newSocket;
 	user.id = newSocket;
+	char usersString[MAX_USERS * MAX_MESSAGE_LENGTH];
+	// for (int i = 0; i < MAX_USERS; i++) {
+		// strcat(usersString, users[i].name);
+	// }
+	// send(user.sockfd, usersString, strlen(usersString), 0);
+	send(user.sockfd, "Connection successful", 21, 0);
+ 	if (read(newSocket, user.name, MAX_MESSAGE_LENGTH) < 0) error("Error in reading");
+	printf("%s\n", user.name);
+	for (int i = 0; i < MAX_USERS; i++) {
+		if (users[i].id == user.id) continue;
+		printf("%d %d %d %d\n", i, users[i].id, user.id, users[i].sockfd);
+		send(users[i].sockfd, user.name, MAX_MESSAGE_LENGTH, 0);
+	}
+	printf("Reaching here\n");
  	do {
  		bzero(buffer, MAX_MESSAGE_LENGTH);
  		if (read(newSocket, buffer, MAX_MESSAGE_LENGTH) < 0) error("Error in reading");
  
  		printf("Client: %s\n", buffer);
 		for (int i = 0; i < MAX_USERS; i++) {
-			printf("Reaching %d %d %d\n", i, users[i].id, user.id);
 			if (users[i].id == user.id) continue;
 			send(users[i].sockfd, buffer, MAX_MESSAGE_LENGTH, 0);
 		}
@@ -75,6 +87,10 @@ int main(int argc, char *argv[]) {
 	while (!terminate) {
 		cliLen = sizeof(cliAddr);
 		newSockfd = accept(sockfd, (struct sockaddr*) &cliAddr, &cliLen);
+		if (newSockfd < 0) {
+			printf("[client_connection] Error in accepting client connection\n");
+			continue;
+		}
 		users[userCount].sockfd = newSockfd;
 		users[userCount].id = newSockfd;
 		if (pthread_create(&users[userCount++].thread, NULL, userThread, &newSockfd) != 0) error("[Thread creation]\n");
