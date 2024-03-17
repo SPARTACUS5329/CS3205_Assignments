@@ -2,6 +2,7 @@
 #include <pthread.h>
 #define MAX_USERS 5
 #define MAX_MESSAGE_LENGTH 100
+#define MAX_TIMEOUT 10
 
 typedef struct user {
 	char name[MAX_MESSAGE_LENGTH];

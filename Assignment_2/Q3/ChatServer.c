@@ -3,11 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/_types/_fd_def.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <sys/time.h>
 #include "./ChatServer.h"
 
 static user_t users[MAX_USERS];
@@ -46,10 +48,25 @@ void* userThread(void *args) {
 		send(users[i].sockfd, tempBuffer, MAX_MESSAGE_LENGTH, 0);
 	}
  	bzero(tempBuffer, MAX_MESSAGE_LENGTH);
+	fd_set readfs;
+	FD_ZERO(&readfs);
+	FD_SET(user->sockfd, &readfs);
+	struct timeval timeout;
+	timeout.tv_sec = MAX_TIMEOUT;
+	timeout.tv_usec = 0;
+
  	do {
  		bzero(buffer, MAX_MESSAGE_LENGTH);
 		strcpy(buffer, user->name); 
 		strcat(buffer, ": "); 
+		int retval = select(user->sockfd + 1, &readfs, NULL, NULL, &timeout);
+		if (retval == -1) error("[userThread] Error in select");
+		if (retval == 0) {
+			printf("Timeout occurred for %s\n", user->name);
+			send(user->sockfd, "Timeout occurred", 16, 0);
+			goto close_user_socket;
+		}
+
  		if (read(newSocket, tempBuffer, MAX_MESSAGE_LENGTH) < 0) error("Error in reading");
 		strcat(buffer, tempBuffer);
 		for (int i = 0; i < MAX_USERS; i++) {
@@ -58,8 +75,8 @@ void* userThread(void *args) {
 		}
  	} while (strncmp("Bye", buffer, 3));
  
-	printf("Exit userThread \n");
-	close(newSocket);
+close_user_socket:
+	close(user->sockfd);
 	pthread_exit(NULL);
 	return NULL;
 }
