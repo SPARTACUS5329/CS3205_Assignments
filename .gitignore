@@ -5,3 +5,5 @@
 *.txt
 *.har
 *.gz
+*server
+*client
