@@ -37,9 +37,11 @@ void* userThread(void *args) {
 	printf("fileName: %s\n", fileName);
 	f = fopen(fileName, "r");
 	
-	while (fscanf(f, "%s ", buffer) != EOF) {
-		printf("%s", buffer);
-	}
+    while (fgetc(f) != EOF) {
+        fscanf(f, "%s", buffer);
+		printf("%s\n", buffer);
+        // write(user->sockfd, buffer, MAX_BUFFER_SIZE);
+    }
 
 	close(user->sockfd);
 	pthread_exit(NULL);
