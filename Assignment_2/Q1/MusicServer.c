@@ -22,11 +22,25 @@ void error(const char *msg) {
 }
 
 void* userThread(void *args) {
-	int newSocket = *((int *) args);
 	user_t *user = &users[userCount - 1];
-	user->id = newSocket;
+	user->sockfd = *((int *) args);
+	user->id = user->sockfd;
+	char buffer[MAX_BUFFER_SIZE];
 	if (read(user->sockfd, &user->request, sizeof(char)) < 0) error("[userThread] Error in reading request");
 	printf("Request: %c\n", user->request);
+
+	FILE *f;
+	char fileName[MAX_NAME_SIZE];
+	strcpy(fileName, BASE_DIR_PATH); 
+	strcat(fileName, &user->request);
+	strcat(fileName, ".txt");
+	printf("fileName: %s\n", fileName);
+	f = fopen(fileName, "r");
+	
+	while (fscanf(f, "%s ", buffer) != EOF) {
+		printf("%s", buffer);
+	}
+
 	close(user->sockfd);
 	pthread_exit(NULL);
 	return NULL;
