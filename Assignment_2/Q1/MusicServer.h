@@ -1,11 +1,11 @@
 #pragma once
 #include <pthread.h>
 #define PORT 8800
-#define MAX_BUFFER_SIZE 1000 
+#define MAX_BUFFER_SIZE 1024 
 #define MAX_NAME_SIZE 20
 #define MAX_USERS 5
 #define BASE_DIR_PATH "./assets/"
-#define MAX_REQUEST_SIZE 5
+#define CHUNK_SIZE 1024
 
 typedef struct user {
 	int sockfd;

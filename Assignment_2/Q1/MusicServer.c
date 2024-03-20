@@ -10,6 +10,7 @@
 #include <netinet/in.h>
 #include <pthread.h>
 #include <sys/time.h>
+// #include "./mpg123.h"
 #include "./MusicServer.h"
 
 static user_t users[MAX_USERS];
@@ -25,23 +26,26 @@ void* userThread(void *args) {
 	user_t *user = &users[userCount - 1];
 	user->sockfd = *((int *) args);
 	user->id = user->sockfd;
-	char buffer[MAX_BUFFER_SIZE];
-	if (read(user->sockfd, &user->request, sizeof(char)) < 0) error("[userThread] Error in reading request");
-	printf("Request: %c\n", user->request);
 
-	FILE *f;
+	if (read(user->sockfd, &user->request, sizeof(char)) < 0) error("[userThread] Error in reading request");
+	
 	char fileName[MAX_NAME_SIZE];
+	char buffer[MAX_BUFFER_SIZE];
+	size_t bytes_read;
 	strcpy(fileName, BASE_DIR_PATH); 
 	strcat(fileName, &user->request);
-	strcat(fileName, ".txt");
+	strcat(fileName, ".mp3");
 	printf("fileName: %s\n", fileName);
-	f = fopen(fileName, "r");
+
+	FILE *file;
+	file = fopen(fileName, "r");  
+	if (!file) error("[userThread] File not found");
 	
-    while (fgetc(f) != EOF) {
-        fscanf(f, "%s", buffer);
-		printf("%s\n", buffer);
-        // write(user->sockfd, buffer, MAX_BUFFER_SIZE);
+	while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
+        if (send(user->sockfd, buffer, bytes_read, 0) != bytes_read) error("Error sending file");
     }
+
+	printf("Data sent successfully");
 
 	close(user->sockfd);
 	pthread_exit(NULL);
@@ -50,7 +54,7 @@ void* userThread(void *args) {
 
 void sigint_handler(int sig) {
 	if (sig == 2) terminate = 1;
-    exit(EXIT_SUCCESS);
+	exit(EXIT_SUCCESS);
 }
 
 int main() {
