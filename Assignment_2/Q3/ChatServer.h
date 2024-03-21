@@ -23,4 +23,5 @@ typedef struct thread_args {
 } thread_args_t;
 
 void removeUser(int id);
+char *listUsers(int id); 
 void *userThread(void *args);

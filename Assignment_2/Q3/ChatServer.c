@@ -35,34 +35,43 @@ void removeUser(int id) {
 	userCount--;
 }
 
-void* userThread(void *args) {
-	thread_args_t *threadArgs = args;
-	user_t *user = &users[userCount - 1];
-	user->sockfd = threadArgs->sockfd;
-	user->id = threadArgs->id;
-	char buffer[MAX_MESSAGE_LENGTH];
-	char tempBuffer[MAX_MESSAGE_LENGTH];
-	char usersString[MAX_USERS * MAX_MESSAGE_LENGTH];
+char *listUsers(int id) {
+	char *usersString = (char *) malloc(MAX_USERS * MAX_MESSAGE_LENGTH * sizeof(char));
 	strcpy(usersString, "Online users: \n"); 
 	bool firstUser = true;
 	for (int i = 0; i < MAX_USERS; i++) {
-		if (!users[i].id || users[i].id == user->id) continue;
+		if (!users[i].id || users[i].id == id) continue;
 		firstUser = false;
 		strcat(usersString, users[i].name);
 		strcat(usersString, "\n");
 	}
 	if (firstUser) strcpy(usersString, "No online users\n");
+	return usersString;
+}
+
+void* userThread(void *args) {
+	thread_args_t *threadArgs = args;
+	user_t *user = &users[userCount - 1];
+	user->sockfd = threadArgs->sockfd;
+	user->id = threadArgs->id;
+
+	char buffer[MAX_MESSAGE_LENGTH];
+	char tempBuffer[MAX_MESSAGE_LENGTH];
+	char *usersString = listUsers(user->id);
 	strcat(usersString, "Enter your username: ");	
 	send(user->sockfd, usersString, strlen(usersString), 0);
+	bzero(usersString, MAX_USERS * MAX_MESSAGE_LENGTH);
+
  	if (read(user->sockfd, user->name, MAX_MESSAGE_LENGTH) < 0) error("Error in reading");
  	bzero(tempBuffer, MAX_MESSAGE_LENGTH);
 	strcpy(tempBuffer, user->name);
 	strcat(tempBuffer, " joined the chat\n");
 	for (int i = 0; i < MAX_USERS; i++) {
-		if (users[i].id == user->id) continue;
-		send(users[i].sockfd, tempBuffer, MAX_MESSAGE_LENGTH, 0);
+		if (users[i].id == user->id) send(users[i].sockfd, "Welcome to the chat room\n", MAX_MESSAGE_LENGTH, 0);
+		else send(users[i].sockfd, tempBuffer, MAX_MESSAGE_LENGTH, 0);
 	}
  	bzero(tempBuffer, MAX_MESSAGE_LENGTH);
+
 	fd_set readfs;
 	FD_ZERO(&readfs);
 	FD_SET(user->sockfd, &readfs);
@@ -79,19 +88,29 @@ void* userThread(void *args) {
 		if (retval == 0) {
 			printf("Timeout occurred for %s\n", user->name);
 			send(user->sockfd, "Timeout occurred", 16, 0);
-			goto close_user_socket;
+			goto remove_user;
 		}
 
  		if (read(user->sockfd, tempBuffer, MAX_MESSAGE_LENGTH) < 0) error("Error in reading");
+		if (!strncmp("\\list", tempBuffer, 5)) {
+			usersString = listUsers(user->id);
+			printf("%s\n", usersString);
+			send(user->sockfd, usersString, strlen(usersString), 0);
+			continue;
+		}
+		if (!strncmp("\\bye", tempBuffer, 4)) {
+			goto remove_user;
+			continue;
+		}
 		strcat(buffer, tempBuffer);
 		for (int i = 0; i < MAX_USERS; i++) {
 			if (users[i].id == user->id) continue;
 			send(users[i].sockfd, buffer, MAX_MESSAGE_LENGTH, 0);
 		}
- 	} while (strncmp("\\bye", buffer, 4));
+ 	} while (strncmp("\\bye", tempBuffer, 4));
  
-close_user_socket:
-	close(user->sockfd);
+remove_user:
+	removeUser(user->id);
 	pthread_exit(NULL);
 	return NULL;
 }
