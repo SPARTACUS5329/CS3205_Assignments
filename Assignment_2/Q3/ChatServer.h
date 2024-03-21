@@ -17,4 +17,10 @@ typedef struct message {
 	user_t sender;
 } message_t;
 
+typedef struct thread_args {
+	int id;
+	int sockfd;
+} thread_args_t;
+
+void removeUser(int id);
 void *userThread(void *args);

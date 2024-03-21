@@ -21,12 +21,27 @@ void error(const char *msg) {
 	exit(1);
 }
 
+void removeUser(int id) {
+	if (id <= 0) {
+		printf("[removeUser] Invalid user id");
+		return;
+	}
+	user_t *user = &users[id - 1];
+	user->id = 0;
+	close(user->sockfd);
+	user->sockfd = 0;
+	user->name[0] = '\0';
+	user->thread = 0;
+	userCount--;
+}
+
 void* userThread(void *args) {
-	int newSocket = *((int *) args);
+	thread_args_t *threadArgs = args;
+	user_t *user = &users[userCount - 1];
+	user->sockfd = threadArgs->sockfd;
+	user->id = threadArgs->id;
 	char buffer[MAX_MESSAGE_LENGTH];
 	char tempBuffer[MAX_MESSAGE_LENGTH];
-	user_t *user = &users[userCount - 1];
-	user->id = newSocket;
 	char usersString[MAX_USERS * MAX_MESSAGE_LENGTH];
 	strcpy(usersString, "Online users: \n"); 
 	bool firstUser = true;
@@ -39,7 +54,7 @@ void* userThread(void *args) {
 	if (firstUser) strcpy(usersString, "No online users\n");
 	strcat(usersString, "Enter your username: ");	
 	send(user->sockfd, usersString, strlen(usersString), 0);
- 	if (read(newSocket, user->name, MAX_MESSAGE_LENGTH) < 0) error("Error in reading");
+ 	if (read(user->sockfd, user->name, MAX_MESSAGE_LENGTH) < 0) error("Error in reading");
  	bzero(tempBuffer, MAX_MESSAGE_LENGTH);
 	strcpy(tempBuffer, user->name);
 	strcat(tempBuffer, " joined the chat\n");
@@ -67,13 +82,13 @@ void* userThread(void *args) {
 			goto close_user_socket;
 		}
 
- 		if (read(newSocket, tempBuffer, MAX_MESSAGE_LENGTH) < 0) error("Error in reading");
+ 		if (read(user->sockfd, tempBuffer, MAX_MESSAGE_LENGTH) < 0) error("Error in reading");
 		strcat(buffer, tempBuffer);
 		for (int i = 0; i < MAX_USERS; i++) {
 			if (users[i].id == user->id) continue;
 			send(users[i].sockfd, buffer, MAX_MESSAGE_LENGTH, 0);
 		}
- 	} while (strncmp("Bye", buffer, 3));
+ 	} while (strncmp("\\bye", buffer, 4));
  
 close_user_socket:
 	close(user->sockfd);
@@ -108,7 +123,7 @@ int main(int argc, char *argv[]) {
 
 	if (bind(sockfd, (struct sockaddr*) &servAddr, sizeof(servAddr)) < 0) error("Binding failed");
 
-	if (listen(sockfd, 5) == 0) printf("Listening to PORT %d\n", portno);
+	if (listen(sockfd, MAX_USERS) == 0) printf("Listening to PORT %d\n", portno);
 	else error("[Error in listening]");
 	
 	while (!terminate) {
@@ -118,12 +133,23 @@ int main(int argc, char *argv[]) {
 			printf("[client_connection] Error in accepting client connection\n");
 			continue;
 		}
-		users[userCount].sockfd = newSockfd;
-		users[userCount].id = newSockfd;
-		if (pthread_create(&users[userCount++].thread, NULL, userThread, &newSockfd) != 0) error("[Thread creation]\n");
-		if (userCount >= 5) {
+		if (userCount >= MAX_USERS) {
+			send(newSockfd, "Max capacity", MAX_MESSAGE_LENGTH, 0);
+			continue;
+		}
+		int id = 0;
+		for (int i = 0; i < MAX_USERS; i++) {
+			if (users[i].id) continue;
+			id = i;
+			break;
+		} 
+		thread_args_t *threadArgs;
+		threadArgs->id = id + 1;
+		threadArgs->sockfd = newSockfd;
+		if (pthread_create(&users[userCount++].thread, NULL, userThread, threadArgs) != 0) error("[Thread creation]\n");
+		if (userCount >= MAX_USERS) {
 			userCount = 0;
-			while (userCount < 5) {
+			while (userCount < MAX_USERS) {
 				pthread_join(users[userCount++].thread, NULL);
 			}
 			userCount = 0;
