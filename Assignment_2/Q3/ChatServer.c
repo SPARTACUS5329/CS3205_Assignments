@@ -11,8 +11,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include "./ChatServer.h"
-
-static user_t users[MAX_USERS];
+int MAX_USERS, MAX_TIMEOUT;
 static int userCount = 0;
 volatile sig_atomic_t terminate = 0;
 
@@ -21,21 +20,28 @@ void error(const char *msg) {
 	exit(1);
 }
 
-void removeUser(int id) {
+void removeUser(int id, user_t users[]) {
 	if (id <= 0) {
 		printf("[removeUser] Invalid user id");
 		return;
 	}
 	user_t *user = &users[id - 1];
+	char buffer[MAX_MESSAGE_LENGTH];
+	strcpy(buffer, user->name);
+	strcat(buffer, " has left the chat\n"); 
 	user->id = 0;
 	close(user->sockfd);
 	user->sockfd = 0;
 	user->name[0] = '\0';
 	user->thread = 0;
 	userCount--;
+	for (int i = 0; i < MAX_USERS; i++) {
+		if (!users[i].id) continue;
+		send(users[i].sockfd, buffer, MAX_MESSAGE_LENGTH, 0);
+	}
 }
 
-char *listUsers(int id) {
+char *listUsers(int id, user_t users[]) {
 	char *usersString = (char *) malloc(MAX_USERS * MAX_MESSAGE_LENGTH * sizeof(char));
 	strcpy(usersString, "Online users: \n"); 
 	bool firstUser = true;
@@ -51,13 +57,14 @@ char *listUsers(int id) {
 
 void* userThread(void *args) {
 	thread_args_t *threadArgs = args;
+	user_t *users = threadArgs->users;
 	user_t *user = &users[userCount - 1];
 	user->sockfd = threadArgs->sockfd;
 	user->id = threadArgs->id;
 
 	char buffer[MAX_MESSAGE_LENGTH];
 	char tempBuffer[MAX_MESSAGE_LENGTH];
-	char *usersString = listUsers(user->id);
+	char *usersString = listUsers(user->id, users);
 	strcat(usersString, "Enter your username: ");	
 	send(user->sockfd, usersString, strlen(usersString), 0);
 	bzero(usersString, MAX_USERS * MAX_MESSAGE_LENGTH);
@@ -81,6 +88,7 @@ void* userThread(void *args) {
 
  	do {
  		bzero(buffer, MAX_MESSAGE_LENGTH);
+		bzero(tempBuffer, MAX_MESSAGE_LENGTH);
 		strcpy(buffer, user->name); 
 		strcat(buffer, ": "); 
 		int retval = select(user->sockfd + 1, &readfs, NULL, NULL, &timeout);
@@ -93,7 +101,7 @@ void* userThread(void *args) {
 
  		if (read(user->sockfd, tempBuffer, MAX_MESSAGE_LENGTH) < 0) error("Error in reading");
 		if (!strncmp("\\list", tempBuffer, 5)) {
-			usersString = listUsers(user->id);
+			usersString = listUsers(user->id, users);
 			printf("%s\n", usersString);
 			send(user->sockfd, usersString, strlen(usersString), 0);
 			continue;
@@ -110,7 +118,8 @@ void* userThread(void *args) {
  	} while (strncmp("\\bye", tempBuffer, 4));
  
 remove_user:
-	removeUser(user->id);
+	removeUser(user->id, users);
+	free(usersString);
 	pthread_exit(NULL);
 	return NULL;
 }
@@ -121,9 +130,12 @@ void sigint_handler(int sig) {
 }
 
 int main(int argc, char *argv[]) {
-	if (argc < 2) error("Not enough input arguments\n");
+	if (argc < 4) error("Not enough input arguments\n");
 	if (signal(SIGINT, sigint_handler) == SIG_ERR) error("signal");
-
+	
+	MAX_USERS = atoi(argv[2]);;
+	MAX_TIMEOUT = atoi(argv[3]);
+	user_t *users = (user_t *) malloc(MAX_USERS * sizeof(user_t));
 	int sockfd, newSockfd, portno;
 	char buffer[MAX_MESSAGE_LENGTH];
 
@@ -165,6 +177,7 @@ int main(int argc, char *argv[]) {
 		thread_args_t *threadArgs;
 		threadArgs->id = id + 1;
 		threadArgs->sockfd = newSockfd;
+		threadArgs->users = users;
 		if (pthread_create(&users[userCount++].thread, NULL, userThread, threadArgs) != 0) error("[Thread creation]\n");
 		if (userCount >= MAX_USERS) {
 			userCount = 0;
@@ -174,7 +187,7 @@ int main(int argc, char *argv[]) {
 			userCount = 0;
 		}
 	}
-
+	free(users);
 	close(sockfd);
 	return 0;
 }
