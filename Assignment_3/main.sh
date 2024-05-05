@@ -49,3 +49,5 @@ for ((i = 0; i < rows; i++)); do
 		done
 	done
 done
+
+python3 plot.py
