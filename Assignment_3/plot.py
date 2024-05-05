@@ -16,6 +16,7 @@ def read_results(method):
 # Generate heatmaps for each method
 for method in methods:
     results = read_results(method)
+    print(results)
 
     plt.figure(figsize=(8, 6))
     plt.imshow(results, cmap="hot", interpolation="nearest")
