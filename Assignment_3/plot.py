@@ -1,19 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Define methods, latencies, and losses
-methods = ["GBN", "SW"]
+methods = ["SW", "GBN", "SR"]
 latencies = [50, 100, 150, 200, 250, 500]
 losses = [0.1, 0.5, 1, 1.5, 2, 5]
 
-# Function to read results from files
 def read_results(method):
     filename = f"{method.lower()}.txt"
     with open(filename, "r") as file:
         results = [float(line.strip()) for line in file]
     return np.array(results).reshape(len(latencies), len(losses))
 
-# Generate heatmaps for each method
 for method in methods:
     results = read_results(method)
     print(results)
@@ -25,5 +22,5 @@ for method in methods:
     plt.ylabel("Latency")
     plt.xticks(np.arange(len(losses)), losses)
     plt.yticks(np.arange(len(latencies)), latencies)
-    plt.colorbar(label="Result")
+    plt.colorbar(label="Time to download")
     plt.show()
