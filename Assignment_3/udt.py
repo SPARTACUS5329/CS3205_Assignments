@@ -9,5 +9,5 @@ def send(packet, sock, addr):
     return
 
 def recv(sock):
-    packet, addr = sock.recvfrom(1024)
+    packet, addr = sock.recvfrom(26000)
     return packet, addr

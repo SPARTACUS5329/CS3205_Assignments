@@ -7,7 +7,7 @@ import udt
 from timer import Timer
 from packet import UDPPacket
 
-PACKET_SIZE = 500 
+PACKET_SIZE = 25000 
 RECEIVER_ADDR = ("localhost", 8081)
 SENDER_ADDR = ("localhost", 0)
 SLEEP_INTERVAL = 0.005
@@ -46,9 +46,7 @@ def send(sock, filename):
         seq_num += 1
 
     num_packets = len(packets)
-    print("I got", num_packets)
-    print("Beginning to send in 5 seconds ...")
-    time.sleep(5)
+    print("Total packets: ", num_packets)
     window_size = set_window_size(num_packets)
     next_to_send = 0
     base = 0
@@ -63,12 +61,12 @@ def send(sock, filename):
             next_to_send += 1
 
         if not send_timer.running():
-            printd("Starting timer")
+            # printd("Starting timer")
             send_timer.start()
 
         while send_timer.running() and not send_timer.timeout():
             mutex.release()
-            printd("Sleeping")
+            # printd("Sleeping")
             time.sleep(SLEEP_INTERVAL)
             mutex.acquire()
 
@@ -79,9 +77,16 @@ def send(sock, filename):
         else:
             printd("Shifting window")
             window_size = set_window_size(num_packets)
+            printd("window_size:", window_size)
+            if window_size <= 0:
+                printd("Reaching")
+                if DEBUG: time.sleep(3)
+                base = float("inf")
         mutex.release()
 
     udt.send(UDPPacket.make_empty(), sock, RECEIVER_ADDR)
+    printd("Send empty packet")
+    if DEBUG: time.sleep(3)
     file.close()
     
 def receive(sock):
@@ -93,7 +98,7 @@ def receive(sock):
         try:
             pkt, _ = udt.recv(sock);
         except:
-            print("Empty packet, terminating server")
+            printd("Empty packet, terminating server")
             break
         ack, _ = UDPPacket.extract(pkt);
 
@@ -128,3 +133,4 @@ if __name__ == "__main__":
 
     send(sock, filename)
     sock.close()
+    printd("Exiting program, socket closed")
