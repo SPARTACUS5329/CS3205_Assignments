@@ -7,3 +7,6 @@
 *.gz
 *server
 *client
+__pycache__
+*.conf
+*.pf
