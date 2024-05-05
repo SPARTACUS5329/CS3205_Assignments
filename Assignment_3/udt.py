@@ -1,13 +1,10 @@
-import random
-import socket
-
-DROP_PROB = 8
-
-def send(packet, sock, addr):
-    if random.randint(0, DROP_PROB) > 0:
+class UDT:
+    @staticmethod
+    def send(packet, sock, addr):
         sock.sendto(packet, addr)
-    return
+        return
 
-def recv(sock):
-    packet, addr = sock.recvfrom(26000)
-    return packet, addr
+    @staticmethod
+    def recv(sock):
+        packet, addr = sock.recvfrom(26000)
+        return packet, addr

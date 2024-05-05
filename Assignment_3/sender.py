@@ -2,12 +2,12 @@ import socket
 import sys
 import _thread
 import time
-import udt
 
 from timer import Timer
+from udt import UDT
 from packet import UDPPacket
 
-PACKET_SIZE = 25000 
+PACKET_SIZE = 500
 RECEIVER_ADDR = ("localhost", 8081)
 SENDER_ADDR = ("localhost", 0)
 SLEEP_INTERVAL = 0.005
@@ -57,34 +57,30 @@ def send(sock, filename):
         mutex.acquire()
         while next_to_send < base + window_size:
             printd("Sending packet", next_to_send)
-            udt.send(packets[next_to_send], sock, RECEIVER_ADDR)
+            UDT.send(packets[next_to_send], sock, RECEIVER_ADDR)
             next_to_send += 1
 
-        if not send_timer.running():
-            # printd("Starting timer")
-            send_timer.start()
+        if not send_timer.running(): send_timer.start()
 
         while send_timer.running() and not send_timer.timeout():
             mutex.release()
-            # printd("Sleeping")
             time.sleep(SLEEP_INTERVAL)
             mutex.acquire()
 
         if send_timer.timeout():
             printd("Timeout")
-            send_timer.stop();
+            send_timer.stop()
             next_to_send = base
         else:
             printd("Shifting window")
             window_size = set_window_size(num_packets)
             printd("window_size:", window_size)
             if window_size <= 0:
-                printd("Reaching")
                 if DEBUG: time.sleep(3)
                 base = float("inf")
         mutex.release()
 
-    udt.send(UDPPacket.make_empty(), sock, RECEIVER_ADDR)
+    UDT.send(UDPPacket.make_empty(), sock, RECEIVER_ADDR)
     printd("Send empty packet")
     if DEBUG: time.sleep(3)
     file.close()
@@ -96,14 +92,14 @@ def receive(sock):
 
     while True:
         try:
-            pkt, _ = udt.recv(sock);
+            pkt, _ = UDT.recv(sock)
         except:
             printd("Empty packet, terminating server")
             break
-        ack, _ = UDPPacket.extract(pkt);
+        ack, _ = UDPPacket.extract(pkt)
 
         printd("Got ACK", ack)
-        if (ack >= base):
+        if ack >= base:
             mutex.acquire()
             base = ack + 1
             printd("Base updated", base)
@@ -111,8 +107,8 @@ def receive(sock):
             mutex.release()
 
 if __name__ == "__main__":
-    args = sys.argv[1:] # [filename, method, window_size]
-    if len(args) < 2 or (args[1] == "GBN" and len(args) < 3):
+    args = sys.argv[1:]
+    if len(args) < 2 or (args[1] in ["GBN", "SR"] and len(args) < 3):
         printd("Not enough arguments")
         exit()
 
@@ -124,13 +120,18 @@ if __name__ == "__main__":
     if METHOD == "GBN":
         WINDOW_SIZE = int(args[2])
         DEBUG = True if len(args) > 3 and args[3] == "1" else False
+        send(sock, filename)
     elif METHOD == "SW":
         WINDOW_SIZE = 1
         DEBUG = True if len(args) > 2 and args[2] == "1" else False
+        send(sock, filename)
+    elif METHOD == "SR":
+        WINDOW_SIZE = int(args[2])
+        DEBUG = True if len(args) > 2 and args[2] == "1" else False
+        send(sock, filename)
     else:
         printd("Invalid method name")
         exit()
 
-    send(sock, filename)
     sock.close()
     printd("Exiting program, socket closed")

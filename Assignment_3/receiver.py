@@ -1,18 +1,18 @@
 import socket
-import random
 import time
 import sys
-import udt
 
 from packet import UDPPacket
+from udt import UDT
 
 RECEIVER_ADDR = ("localhost", 8081)
+writeData = []
 
 def printd(*args):
     global DEBUG
     if DEBUG: print(*args)
 
-def receive(sock, filename):
+def receiveGBN(sock, filename):
     try:
         file = open(filename, "wb")
     except IOError:
@@ -22,7 +22,7 @@ def receive(sock, filename):
     expected_num = 0
     start_time = None
     while True:
-        pkt, addr = udt.recv(sock)
+        pkt, addr = UDT.recv(sock)
         if not start_time: start_time = time.time()
         if not pkt: break
 
@@ -33,15 +33,60 @@ def receive(sock, filename):
             printd("Got expected packet")
             printd("Sending ACK", expected_num)
             pkt = UDPPacket.make(expected_num)
-            udt.send(pkt, sock, addr)
+            UDT.send(pkt, sock, addr)
             expected_num += 1
             file.write(data)
         else:
             printd("Sending ACK", expected_num - 1)
             pkt = UDPPacket.make(expected_num - 1)
-            udt.send(pkt, sock, addr)
+            UDT.send(pkt, sock, addr)
 
     end_time = time.time()
+    file.close() 
+
+    return end_time - start_time
+
+def receiveSR(sock, filename):
+    try:
+        file = open(filename, "wb")
+    except IOError:
+        print("Unable to open", filename)
+        return
+    
+    expected_num = 0
+    expected_future = 1
+    start_time = None
+    while True:
+        pkt, addr = UDT.recv(sock)
+        if not start_time: start_time = time.time()
+        if not pkt: break
+
+        seq_num, data = UDPPacket.extract(pkt)
+        printd("Got packet", seq_num)
+
+        if seq_num == expected_num:
+            printd("Got expected packet")
+            printd("Sending ACK", expected_num)
+            if expected_future - expected_num <= 1:
+                pkt = UDPPacket.make(expected_num)
+            else:
+                pkt = UDPPacket.make(expected_future - 1)
+            UDT.send(pkt, sock, addr)
+            expected_num, expected_future = expected_future, expected_future + 1
+            writeData.append(data)
+        elif seq_num == expected_future:
+            printd("Got future packet")
+            expected_future += 1
+        else:
+            printd("Sending ACK", expected_num - 1)
+            pkt = UDPPacket.make(expected_num - 1)
+            UDT.send(pkt, sock, addr)
+
+    end_time = time.time()
+
+    for data in writeData:
+        file.write(data)
+
     file.close() 
 
     return end_time - start_time
@@ -55,9 +100,13 @@ if __name__ == "__main__":
     sock.bind(RECEIVER_ADDR) 
 
     filename = sys.argv[1]
-    DEBUG = True if len(sys.argv) > 2 and sys.argv[2] == "1" else False
+    method = sys.argv[2]
+    DEBUG = True if len(sys.argv) > 3 and sys.argv[3] == "1" else False
 
-    time_taken = receive(sock, filename)
+    if method in ["GBN", "SW"]: time_taken = receiveGBN(sock, filename)
+    elif method == "SR": time_taken = receiveSR(sock, filename)
+    else: print("Invalid method")
 
     sock.close()
-    print(time_taken) 
+
+    print(time_taken)
