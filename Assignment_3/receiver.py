@@ -6,7 +6,7 @@ import udt
 
 from packet import UDPPacket
 
-RECEIVER_ADDR = ("localhost", 8080)
+RECEIVER_ADDR = ("localhost", 8081)
 
 def printd(*args):
     global DEBUG

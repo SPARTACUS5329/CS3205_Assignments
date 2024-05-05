@@ -8,7 +8,7 @@ from timer import Timer
 from packet import UDPPacket
 
 PACKET_SIZE = 500 
-RECEIVER_ADDR = ("localhost", 8080)
+RECEIVER_ADDR = ("localhost", 8081)
 SENDER_ADDR = ("localhost", 0)
 SLEEP_INTERVAL = 0.005
 TIMEOUT_INTERVAL = 0.2
@@ -90,7 +90,11 @@ def receive(sock):
     global send_timer
 
     while True:
-        pkt, _ = udt.recv(sock);
+        try:
+            pkt, _ = udt.recv(sock);
+        except:
+            print("Empty packet, terminating server")
+            break
         ack, _ = UDPPacket.extract(pkt);
 
         printd("Got ACK", ack)
@@ -103,7 +107,6 @@ def receive(sock):
 
 if __name__ == "__main__":
     args = sys.argv[1:] # [filename, method, window_size]
-    DEBUG = False
     if len(args) < 2 or (args[1] == "GBN" and len(args) < 3):
         printd("Not enough arguments")
         exit()
@@ -113,8 +116,12 @@ if __name__ == "__main__":
 
     filename = sys.argv[1]
     METHOD = args[1]
-    if METHOD == "GBN": WINDOW_SIZE = int(args[2])
-    elif METHOD == "SW": WINDOW_SIZE = 1
+    if METHOD == "GBN":
+        WINDOW_SIZE = int(args[2])
+        DEBUG = True if len(args) > 3 and args[3] == "1" else False
+    elif METHOD == "SW":
+        WINDOW_SIZE = 1
+        DEBUG = True if len(args) > 2 and args[2] == "1" else False
     else:
         printd("Invalid method name")
         exit()
