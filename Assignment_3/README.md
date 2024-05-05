@@ -1,5 +1,10 @@
 # Assignment 3
 
+### Contributions
+
+1. Aditya K (CH21B005) - Task 2
+2. Keshaw (EE21B069) - Task 1
+
 ### Command to run:
 
 `chmod +x ./main.sh && ./main.sh 0`
